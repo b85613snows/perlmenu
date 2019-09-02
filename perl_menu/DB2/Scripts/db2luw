@@ -1,0 +1,285 @@
+#!/bin/bash
+###########################################################################################
+#  Script: db2luw
+#  db2luw  This shell script takes care of starting and stopping
+#       db2 servers (db2sysc).
+#  
+#  Return databases of a db2 instance to the calling program
+# Version 2.01 AUGUST 2019 
+# AUTHOR: Gustavo Mayordomo (83885613@es.ibm.com)
+# GROUP:  Grupo Bases de datos torre 1
+# ###############################################
+# =============================================================================
+# History of Changes
+# =============================================================================
+# Version   Person: /Comments
+# 20190724  Gustavo Mayordomo : Created from Spanish version 1.17
+# 20190814  Gustavo Mayordomo : Modify comments and code to English support
+# ============================================================================
+#
+function buscoversion
+{
+
+
+let lin=0
+
+ver95='9.5.'
+ver97='9.7.'
+ver101='10.1'
+ver105='10.5'
+ver111='11.1'
+okver='N'
+nok='N'
+
+   dbLS=/tmp/dbbuscoi1.out
+   touch ${dbLS?}
+   chmod 777 ${dbLS?}
+   "/usr/local/bin/db2ls" > ${dbLS?}
+
+   while IFS=$' ' read -r -a myArray; do
+      :
+      let lin=$lin+1
+      if [[ $lin > 3 ]]; then
+
+        install=${myArray[0]}
+        install="${install%"${install##*[![:space:]]}"}"
+        version=${myArray[1]}
+        version="${version%"${version##*[![:space:]]}"}"
+        if [[ $install == $dbinstall ]] ; then 
+          vs=`expr substr "$version" 1 4`
+              vs="${vs%"${vs##*[![:space:]]}"}"
+              if [[ $vs == $ver95 ]] ; then
+                #echo "                       "
+                #echo "+++++   Version found  " $vs
+                #echo "                       "
+                okver='S'  
+                version='V95'
+                rm -f ${dbLS?}
+                return 0
+              fi
+              
+              if [[ $vs == $ver97 ]] ; then
+                #echo "                       "
+                #echo "+++++   Version found  " $vs
+                #echo "                       "
+                okver='S' 
+                version='V97'
+                rm -f ${dbLS?}
+                return 0
+              fi
+              
+             if [[ $vs == $ver101 ]] ; then
+                #echo "                       "
+                #echo "+++++   Version found  " $vs
+                #echo "                       "
+                okver='S' 
+                version='V10'
+                rm -f ${dbLS?}
+                return 0
+              fi
+
+             if [[ $vs == $ver105 ]] ; then
+                #echo "                       "
+                #echo "+++++   Version found  " $vs
+                #echo "                       "
+                okver='S' 
+                version='V105'
+                rm -f ${dbLS?}
+                return 0
+              fi
+           
+            if [[ $vs == $ver111 ]] ; then
+                #echo "                       "
+                #echo "+++++   Version found  " $vs
+                #echo "                       "
+                okver='S'
+                version='V111'
+                rm -f ${dbLS?}
+                return 0
+              fi
+
+ 
+
+        fi 
+
+      fi
+   done < ${dbLS?}
+   rm -f ${dbLS?}
+
+   if [[ $nok == $okver ]] ; then
+          echo "                       "
+          echo "***** INSTANCE VERSION NOT FOUND. LEAVING ***** " 
+          echo "   "
+          exit 12
+   fi
+               
+ return 0
+}
+
+function buscoinstall
+{
+#echo ">>>>  Searching db2 installation directory "
+let lin=0
+okinst='N'
+nok='N'
+
+   dbLS=/tmp/dbbuscoi.out
+   touch ${dbLS?}
+   chmod 777 ${dbLS?}
+   "/usr/local/bin/db2ls" > ${dbLS?}
+
+   while IFS=$' ' read -r -a myArray; do
+      :
+      let lin=$lin+1
+      if [[ $lin > 3 ]]; then
+
+        dbinstall=${myArray[0]}
+        dbinstall="${dbinstall%"${dbinstall##*[![:space:]]}"}"
+        #echo "Directy found"
+        #echo $dbinstall
+
+        dbFN=/tmp/dbbuscoilist.out
+        touch ${dbFN?}
+        chmod 777 ${dbFN?}
+        $dbinstall"/instance/db2ilist" > ${dbFN?}
+        while read db; do
+        :
+           if [[ $instancia == $db ]] ; then
+           directorio=$dbinstall'/ha/tsa/'
+           #echo "                      "
+           #echo "++++  Directory instance  $instancia  found"
+           #echo $dbinstall
+           #echo "++++  Another directories ignored               "
+           #echo "                                                 "
+           okinst='S'  
+           rm -f ${dbFN?}
+           rm -f ${dbLS?}
+           return 0
+           fi
+
+        done < ${dbFN?}
+        rm -f ${dbFN?}
+
+      fi
+   done < ${dbLS?}
+   rm -f ${dbLS?}
+    if [[ $nok == $okinst ]] ; then
+          echo "                       "
+          echo "***** INSTANCE INSTALLATION DIRECTORY CANNOT BE FOUND. LEAVING ***** "
+          echo "   "
+          exit 12
+   fi
+
+return 0
+}
+
+
+# Program principal
+
+instancia=$2
+
+#echo ">>>>>  Get it db2luw    "
+#echo "   "
+
+
+# IF THERE IS NO INSTANCE INSTALLATION DIRECTORY AS ARGUMENT, I. E.,      #
+# IF THE COMMAND IS SERVICE DB2LUW <INSTANCIA> <COMANDO>                  #
+# DIRECTORY IS SEARCHED                                                   #                                                  
+if [[ $3 == "" ]] ; then 
+                     buscoinstall
+                    else 
+                     dbinstall=$3
+                     directorio=$3'/ha/tsa/' 
+fi
+
+buscoversion
+
+
+if [ $2 == "" ] ; then
+        echo "***** ITS NECESSARY INSTANCE NAME *****"
+        echo " "
+        exit 4
+    fi
+
+# Source function library.
+#. /etc/init.d/functions
+
+# See how we were called.
+case "$1" in
+        start)
+                $directorio"db2"$version"_start.ksh" $2
+                RETVAL=$?
+                if [ $RETVAL -eq 0 ]; then
+                echo  " "
+                echo  $"Instance started  $2   "
+                echo  " "
+                fi
+                if [ $RETVAL -ne 0 ]; then
+                echo  " "
+                echo  $"Instance start error  $2  "
+                echo  " "
+                fi
+                ;;
+        stop)
+                $directorio"db2"$version"_stop.ksh"  $2
+                RETVAL=$?
+                if [ $RETVAL -eq 0 ]; then
+                echo  " "
+                echo  $"Stopped instance $2   "
+                echo  " "
+                fi
+                if [ $RETVAL -ne 0 ]; then
+                echo  " "
+                echo  $"Error stopping instance $2  "
+                echo  " "
+                fi
+                ;;
+        status)
+                $directorio"db2"$version"_monitor.ksh" $2
+                RETVAL=$?
+                if [ $RETVAL -eq 1 ]; then
+                echo  " "
+                echo  $"Active instance $2   "
+                echo  " "
+                fi
+                if [ $RETVAL -eq 2 ]; then
+                echo  $"Stopped or not found instance $2  "
+                fi
+
+                ;;
+        restart)
+                $directorio"db2"$version"_stop.ksh"  $2
+                RETVAL=$?
+                if [ $RETVAL -eq 0 ]; then
+                echo  " "
+                echo  $"Stopped instance $2   "
+                echo  " "
+                fi
+                if [ $RETVAL -ne 0 ]; then
+                echo  " "
+                echo  $"Stopping instance error $2  "
+                echo  " "
+                fi
+                $directorio"db2"$version"_start.ksh" $2
+                RETVAL=$?
+                 if [ $RETVAL -eq 0 ]; then
+                echo  " "
+                echo  $"Instance Started  $2   "
+                echo  " "
+                fi
+                if [ $RETVAL -ne 0 ]; then
+                echo  " "
+                echo  $"Instance starting error  $2  "
+                echo  " "
+                fi
+                ;;
+         usage)
+                echo $"Usage: $0 {start|stop|restart|status|usage}"
+                RETVAL=0
+                ;;
+             *)
+                echo $"Usage: $0 {start|stop|restart|status|usage}"
+                RETVAL=2
+esac
+
+exit $RETVAL

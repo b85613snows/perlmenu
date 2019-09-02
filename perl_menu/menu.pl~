@@ -1,0 +1,604 @@
+#!/usr/bin/perl
+use lib './libs/';
+use Arquitectura; 
+use Menu;
+use POSIX;
+use Term::Cap;
+use Switch;
+use Getopt::Std;
+use HotKey;
+use Term::ANSIColor qw(:constants);
+use Cwd;
+
+use strict;
+use warnings;
+
+
+
+
+################################
+#  init program
+################################
+
+#eval "use  Win32::OLE('in')";
+
+
+## define constants
+
+my $scr_reset="\e[2J";
+my $scr_blink="\e[5m";
+my $scr_blink_off="\e[25m";
+my $bg_black="\e[40m";
+
+cambio_color(ON_BLACK);
+
+
+
+## defini variables
+
+my $ret_code=0;
+my $ejecuto=0;
+my $ret_code_pgm=0;
+my $ret_code_pnl=0;
+my $menuactual='';
+my $menutmp='';
+my $char='';
+my $tcap='';
+my $delay='';
+my %hash_pnl = ();
+my %hash_pgm = ();
+my @pila_menu =();  
+my $maxrow='';
+my $maxcol='';
+my %option=();
+my @tags=();
+my $coord_x=1;
+my $coord_y=1;
+my %param=();
+my %mensajes=();
+my $olddir = getcwd;
+my $dir = getcwd;
+our $option_a;
+
+getopts('Dha:',\%option);
+
+if ($option{D}) {
+    my $debug_file = './debug.txt';
+    open(OUTDBG, "> $debug_file")
+    or die "Couldn't open File  $debug_file  \n";
+
+    print OUTDBG "Modo debug.. \n  ";
+                 }
+
+
+my $username = getpwuid( $< );
+my $pnl_dia=get_dia();
+my $pnl_hora=get_hora();
+my $sist_op=get_ssoo();
+
+
+################################################
+#
+#  COPIO .TERMCAP SI NO EXISTE
+#
+#################################################
+
+$sist_op=trim($sist_op);
+
+if ($sist_op eq 'aix' ) {
+                          my $home_dir=$ENV{HOME};
+                          my $term_cap=$home_dir.'/.termcap';
+                          if ( ! -e $term_cap) {
+                                                 my $Cmd_copy="cp ./libs/.termcap $term_cap";
+                                                 my @Cmd_copyres=`$Cmd_copy`;  
+                                                 my $rc=$?;
+                                                 if ($rc != 0){
+                                                                foreach $_ (@Cmd_copyres) {
+                                                                                   print "$_ \n";
+                                                                                          } # END foreach
+                                                                          $ret_code=salir(25);          
+ 
+                                                    }  # END ERROR IF
+
+                                                } #END NO EXISTE TERMCAP EN HOME
+                          }               
+
+
+#################################################
+#
+# LEO FICHERO DE PARAMETROS 
+#
+################################################
+
+  %param=leoparam('');
+  if ($option{D}) {
+                    print OUTDBG "Parametros leidos.. \n  ";   
+
+                    foreach (sort keys %param) {
+                    print OUTDBG "$_ : $param{$_}\n";
+                                                }
+                   } 
+
+
+#################################################
+#
+# CARGA DINAMICA DEL FICHERO DE MENSAJES
+#
+#################################################
+my $lang = 'message_'.$param{"LANG"}.'.pm';
+
+eval {
+    require $lang;
+ #   $lang->import( qw/%lang_msg carga_msg/ ) ;
+   
+};
+
+if ($@) {
+      die "Error: Language module not found: $@";
+}
+
+my $aux='message_'.$param{"LANG"}.'::carga_msg()';
+
+ %mensajes = eval("$aux");
+ if ($@) {
+      die "Error: Can't loading dynamic language module : $@";
+          }
+ 
+if ($option{D}) {
+                    print OUTDBG "Mensajes cargados.. \n  ";   
+
+                    foreach (sort keys %mensajes) {
+                    print OUTDBG "$_ : $mensajes{$_}\n";
+                                                }
+                   }
+
+#################################################
+#
+# PROCESO DE PARAMETROS
+#
+#################################################
+
+if ($option{h}) {
+ 
+    cambio_color(ON_BLACK);
+    cambio_color(WHITE);
+    print "$mensajes{'msg50'}  \n";
+    print "$mensajes{'msg51'}  \n";
+    print "$mensajes{'msg52'}  \n";
+    print "$mensajes{'msg53'}  \n";
+    print "$mensajes{'msg54'}  \n";
+    $ret_code=salir(0);
+                 }
+
+$option{a}='SAMPLE' unless defined $option{a};
+    
+if (($option{a} ) ne '' ) { 
+             $dir=$dir.'/'.$option{a}.'/';
+                           }
+          else {
+             $dir=$dir.'/SAMPLE'.'/';
+               }    
+
+ 
+if ($option{D}) {
+                    print OUTDBG "Directorio .. \n  ";   
+                    print OUTDBG "directorio $dir \n";
+                   
+                   }
+
+######################################################
+#
+# INICIALIZO EL TERMINAL
+#
+###################################################### 
+
+init();            # Initialize Term::Cap.
+
+
+
+get_ssoo();       # print "Buscando el sistema operativo \n";
+
+######################################################
+#
+#  COPIO MENU INI A TXT
+#
+######################################################
+
+
+$ret_code=copioMenu($dir."MenuMain.ini",$dir."MenuMain.txt");
+ if ($option{D}) {
+             print OUTDBG "Copio Menu ini a txt \n  ";
+                  }
+
+
+######################################################
+#
+# RESOLVEMOS LOS SUBMENUS DINAMICOS
+#
+###################################################### 
+
+chdir($dir);
+
+my $dinamico = 1;
+my $ndynam = "";
+
+do {
+
+    $dinamico = hayDinamic($dir."MenuMain.txt");
+
+    if ($option{D}) {
+                    print OUTDBG "Vuelvo de dinamico con codigo $dinamico \n  ";
+                    } 
+
+   
+
+    if ( $dinamico == 1) { 
+                            if ($option{D}) {
+                                            print OUTDBG "Detectado menu tipo dinamico. Se intenta resolver \n  ";   
+                                             } 
+
+                           ($ret_code,$ndynam)=resolDinamic($dir."MenuMain.txt",$dir);
+                            if ( $ret_code == 0 )
+                                     {
+                                      if ($option{D}) {
+                                                print OUTDBG "Salgo de resolDinamic con error codigo ...$ret_code \n  ";   
+                                                       } 
+         
+                                      $ret_code=salir(20);
+                                     }
+                                else {
+                                     if ($option{D}) {
+                                                print OUTDBG "Salgo bien de  resolDinamic  ...$ret_code \n  ";
+                                                print OUTDBG "Entro a sustituir menus dinamico ....$ndynam...$dir... \n  ";
+                                                       }
+                             $ret_code=sustDinamic($dir."MenuMain.txt",$ndynam,$dir);
+                                     if ( $ret_code == 0 )
+                                             {
+                                               $ret_code=salir(8);
+                                             }
+                                      else {
+                                               $dinamico = hayDinamic($dir."MenuMain.txt"); 
+                                               if ($option{D}) {
+                                                print OUTDBG "Compruebo si hay mas menus dinamicos \n  ";
+                                                       }
+                                            } 
+                                }
+        }  
+    }  until ($dinamico == 0);
+
+
+##############################
+# Llamamos al primer menu
+##############################
+
+@pila_menu=initpila(@pila_menu);
+
+$ret_code=existSubmenu($dir."MenuMain.txt","MAIN");
+
+ if ( $ret_code == 0 )
+              {
+                $ret_code=salir(8);
+                          
+              } 
+        else {
+               $menuactual="MAIN";
+              }   
+$ret_code=showmenu($dir."MenuMain.txt","MAIN");
+
+if ( $ret_code == 0 )
+              {
+                $ret_code=salir(10);
+              } 
+
+
+while ( $char ne 'q' ) {
+
+ while (not defined ($char = readkey(-1))) {
+                                           select(undef, undef, undef, 0.50);
+                                            }
+
+
+     if ($ejecuto == 1) {
+                        $ejecuto=0;
+                        clear_screen();
+                        $ret_code=showmenu($dir."MenuMain.txt",$menuactual); 
+                        $char='%';
+                         }
+
+     
+   
+     if ($char eq 'b' ) {
+              
+                    $menutmp='';
+                   ( $menutmp, @pila_menu ) = extraepila(@pila_menu);
+                 
+                   if ($option{D}) {
+                                     print OUTDBG "SACO DE PILA ...$menutmp \n  ";   
+                                    }
+                 
+                    if ( $menutmp eq 'FIN' ) {
+                                            $ret_code=salir(8);          
+                                              }
+                   
+                   $ret_code=showmenu($dir."MenuMain.txt",$menutmp); 
+                      if ( $ret_code == 0 )
+                          {
+                           if ($option{D}) {
+                                           print OUTDBG "NO EXISTE MENU PREVIO...$menutmp \n  ";   
+                                            }
+                           $ret_code=salir(12);          
+                          } 
+                      else {
+                           $menuactual=$menutmp; 
+                           }
+                    
+                        }  # find if char b
+
+        else { 
+                
+                $ret_code_pgm=existScript($hash_pgm{ $char },$dir);
+                $ret_code_pnl=existSubmenu($dir."MenuMain.txt",$hash_pnl{ $char });
+
+                if ($option{D}) {
+                          $hash_pgm{ $char }='NULL' unless defined $hash_pgm{ $char };
+                          $hash_pnl{ $char }='NULL' unless defined $hash_pnl{ $char };
+                          print OUTDBG "IMPRIMO char escogido...$char \n  ";   
+                          print OUTDBG "IMPRIMO ret_code_pgm....$ret_code_pgm \n  ";
+                          print OUTDBG "IMPRIMO hash pgm   ...  $hash_pgm{ $char }\n  ";
+                          print OUTDBG "IMPRIMO ret_code_pnl....$ret_code_pnl \n  ";
+                          print OUTDBG "IMPRIMO hash pnl   ...  $hash_pnl{ $char }\n  ";
+                          print OUTDBG "IMPRIMO menu actual   ... $menuactual  \n  ";
+                                 }
+
+               if (( $ret_code_pgm == 0 ) and  ( $ret_code_pnl == 0 ))
+
+                 {
+                   my $miopt=0;
+                   for my $opcpnl (keys %hash_pnl) {
+                                         
+                                         if ($char eq $opcpnl ) {  
+                                                                     if ($option{D}) {
+                                                                                  print OUTDBG "COMPRUEBO OPCPNL..$char  $opcpnl \n  ";
+                                                                                      }
+                                                                     
+                                                                              $miopt=1;
+                                                                              }
+                                                   } 
+                   for my $opcpgm (keys %hash_pgm) {
+                                         if ($char eq $opcpgm ) {
+                                                                     if ($option{D}) {
+                                                                                  print OUTDBG "COMPRUEBO OPCPGM..$char  $opcpgm \n  ";
+                                                                                      }
+                                                                              $miopt=1;
+                                                                              }
+                                                   } 
+                   
+                  if ($miopt == 1 ) {
+                                       $ret_code=salir(14);  
+                                     }  
+                      else {          
+                              gotoxy( $coord_x,$coord_y+2);
+                              $hash_pnl{$char} = ' ' unless defined $hash_pnl{$char};
+                              imprime_color(RED, "  $mensajes{'msg1'}   $char  $hash_pnl{ $char }  \n");
+                                                            
+                            }    
+                                      
+                 }   
+               else {
+                      if ( $ret_code_pnl == 1 ) {
+                                               
+                                               @pila_menu=insertpila($menuactual,@pila_menu);
+                                               if ($option{D}) {
+                                                             print OUTDBG "METO EN PILA...$menuactual \n  ";   
+                                                                }
+                                               $menutmp=$hash_pnl{$char};
+                                               $ret_code=showmenu($dir."MenuMain.txt",$hash_pnl{$char}); 
+                                               if ( $ret_code == 0 )
+                                                     {
+                                                        if ($option{D}) {
+                                                             print OUTDBG "SALGO DE SHOWMEN CON ERROR \n  ";   
+                                                                         }
+                                                        $ret_code=salir(14);             
+                                                     } 
+                                                     else {
+                                                       $menuactual=$menutmp;  
+                                                          }
+                                                     }
+                       else {
+                               if ($option{D}) {
+                                               print OUTDBG "EJECUTO SCRIPT...$hash_pgm{ $char } \n  ";   
+                                                } 
+                               $ret_code=executeScript($hash_pgm{ $char },$dir); 
+                               if ($ret_code == 0 ){ 
+                                                    $ret_code=salir(16);
+                                                    }
+                                                    else {
+                                                          $ejecuto=1;
+                                                          }
+                                                 
+                             }        
+                     }
+    
+              }   # else if  not b  
+
+             }   # bucle espera
+
+ clear_screen();
+ $ret_code=salir(0);
+ cambio_color(ON_BLACK);
+ cambio_color(WHITE);
+exit 0;
+
+
+sub salir 
+
+  {
+  my ($codesal)  = @_;
+
+   if ($option{D}) {
+                      print OUTDBG "Entro en salir con codigo ...$codesal \n  ";   
+                    } 
+
+ #print $scr_reset;
+
+  cambio_color(ON_BLACK);
+  cambio_color(WHITE);
+
+  $hash_pnl{$char} = ' ' unless defined $hash_pnl{$char};
+
+
+  	switch ($codesal) {
+           case 0       { print "$mensajes{'msg0'}  \n"; }
+           case 8       { print "$mensajes{'msg8'} \n"; }
+           case 10	{ print "$mensajes{'msg10'} \n"; }
+           case 12	{ print "$mensajes{'msg12'} $menutmp \n"; } 
+           case 14      { print "$mensajes{'msg14'} $hash_pnl{$char} \n"; } 
+           case 16      { print "$mensajes{'msg16'} \n"; }  
+           case 20      { print "$mensajes{'msg20'} \n"; }  
+           case 25      { print "$mensajes{'msg25'} \n"; }
+           else { print "$mensajes{'msg99'} \n"; }
+                           }
+
+  if ($option{D}) { close (OUTDBG); }
+
+  chdir($olddir);
+  
+  exit $codesal 
+  
+  }
+
+sub creoventana
+
+ {
+   my ($posx,$sizex,$posy,$sizey ) =  @_;
+   my $model='***********************                                                                                                                          ';
+   my $cab_top='_____________________________________________________________________________________________________________________________________________________';
+   my $cab_lat='|';
+      $cab_top=substr($cab_top,0,$sizex);
+   my $cleaner=substr($model,0,$sizex-2);
+   goto($posx,$posy);
+   imprime_color(YELLOW, "$cab_top");
+   $posy++;       
+          for (my $i=1; $i <= $sizey-1; $i++) {
+          goto($posx,$posy);
+          imprime_color(YELLOW, "$cab_lat");
+          goto($posx,$posy+$sizex);
+          imprime_color(YELLOW, "$cab_lat");
+          goto($posx+1,$posy);
+          imprime_color(WHITE "$cleaner");
+          $posy++;
+                                                }
+ gotoxy($posx,$posy);
+ imprime_color(YELLOW, "$cab_top");
+ cambio_color(ON_BLACK);
+ return 1;
+ }
+
+sub showmenu
+
+ {
+  my ($nameMenu, $nameSubmenu)  = @_;
+
+   if ($option{D}) {
+                      print OUTDBG "Entro en showmenu ...$nameMenu, $nameSubmenu \n  ";   
+                    }
+    
+  my  $nameSubmenustart=$nameSubmenu.'_START';
+#    print " nombre menu $nameSubmenustart \n";
+  my  $nameSubmenuend=$nameSubmenu.'_END'; 
+  my  $menu_find=0;
+
+    $coord_x=5;
+    $coord_y=5;
+    @tags=();
+    
+    
+    open(INPUT, "< $nameMenu")
+    or die "Couldn't open File $nameMenu   \n";
+
+  my  $result=0;
+  my  $line='';
+ 
+    
+    while (defined ($line = <INPUT>)) {
+    #chomp $line;
+    @tags= split('<TAG>', $line);
+    my ($dato0, $dato1, $dato2, $dato3) = @tags;
+    $dato0 = '' unless defined $dato0;
+    $dato1 = '' unless defined $dato1;
+    $dato2 = '' unless defined $dato2;
+    $dato3 = '' unless defined $dato3; 
+    if ($option{D}) {
+                      print OUTDBG "datos....$menu_find $dato0, $dato1, $dato2, $dato3 \n  ";   
+                    }
+        
+         $dato0=trim($dato0);  
+         if ($dato0 eq $nameSubmenuend) {
+                                     $menu_find=0;
+                                     $coord_x=$coord_x+10;$coord_y=$coord_y+2; 
+                                     gotoxy($coord_x,$coord_y);
+                                     imprime_color(WHITE, "  TECLEE OPCION <n> MENU ANTERIOR  <b>  SALIR <q>  \n");
+                                    
+                                     }  
+         if ($menu_find == 1 )     {
+                             
+                                   $dato1=trim($dato1);
+                                   gotoxy($coord_x+5,$coord_y);
+                                   imprime_color(GREEN, "$dato0. ");
+                                   imprime_color(YELLOW, "$dato1  "); 
+                                   $coord_y++; 
+                     
+                                   #construyo array de subopciones
+                                  
+                                   $dato2=trim($dato2);
+
+                                   if ($dato2 eq 'PNL') {
+                                                            $dato3=trim($dato3);
+                                                            $hash_pnl{ $dato0 } = $dato3; 
+                                                           }
+                                    
+                                   if ($dato2 eq 'PGM') {
+                                                            $dato3=trim($dato3);
+                                                            $hash_pgm{ $dato0 } = $dato3; 
+                                                           }                                 
+  
+
+                                                                                                      
+                                     }  
+         if ($dato0 eq $nameSubmenustart) {
+                                     $menu_find=1;
+                                     $result =1;
+                                     print $scr_reset;
+                                     $dato1=trim($dato1); 
+                                     gotoxy($coord_x+14,$coord_y+1); 
+                                     imprime_color(BLUE, "$dato1 ");
+                                     gotoxy($coord_x+60,$coord_y-3); 
+                                     imprime_color(GREEN, "$mensajes{'var01'} :  ");
+                                     imprime_color(WHITE, "$username");
+                                     gotoxy($coord_x+95,$coord_y-3); 
+                                     imprime_color(GREEN, "$mensajes{'var04'} :  ");
+                                     imprime_color(WHITE, "$sist_op"); 
+                                     gotoxy($coord_x+60,$coord_y-2); 
+                                     imprime_color(GREEN, "$mensajes{'var02'} :  ");
+                                     imprime_color(WHITE, "$pnl_dia");
+                                     gotoxy($coord_x+60,$coord_y-1); 
+                                     imprime(GREEN, "$mensajes{'var03'} :  ");
+                                     $pnl_hora=get_hora();
+                                     imprime(WHITE, "$pnl_hora");
+
+                                     $coord_x=$coord_x+3;$coord_y=$coord_y+3;
+                                      
+                                     
+
+                                     %hash_pnl = ();
+                                     %hash_pgm = ();
+                                          }    
+  
+                                      }  # while
+  # print reset;
+   close (INPUT); 
+   return $result;
+
+   }
+
+

@@ -1,0 +1,22 @@
+=head2 Thu Apr 21 08:49:46 2016: C<Module> L<HTML::Template|HTML::Template>
+
+=over 4
+
+=item *
+
+C<installed into: /home/es085613/Documents/perl_template/librerias/lib/perl5>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 2.6>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+

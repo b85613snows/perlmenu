@@ -1,0 +1,7 @@
+PDI1_START <TAG>  LIST DIR EXAMPLE MENU <TAG>
+z <TAG>  CAT FILE  ./Dynamic/lista_dir.pl   <TAG> PGM <TAG> cat.sh  ./Dynamic/lista_dir.pl <TAG> 
+ y <TAG>  CAT FILE  ./Dynamic/lista_dir.pl~   <TAG> PGM <TAG> cat.sh  ./Dynamic/lista_dir.pl~ <TAG> 
+ x <TAG>  CAT FILE  ./Dynamic/lista_dir.pl~   <TAG> PGM <TAG> cat.sh  ./Dynamic/lista_dir.pl~ <TAG> 
+ w <TAG>  CAT FILE  ./Scripts/cat.sh   <TAG> PGM <TAG> cat.sh  ./Scripts/cat.sh <TAG> 
+ v <TAG>  CAT FILE  ./Scripts/cat.sh~   <TAG> PGM <TAG> cat.sh  ./Scripts/cat.sh~ <TAG> 
+ PDI1_END <TAG>

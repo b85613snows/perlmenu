@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+
+sub auxtrim($)
+{
+ my $string = shift;
+ $string =~ s/^\s+//;
+ $string =~ s/\s+$//;
+ return $string;
+   }
+
+
+my $menuTemp="./menuTemp.txt";
+open(FILERES, "> $menuTemp") or die "Couldn't open File $menuTemp   \n";
+my $Cmd="ls -R ";
+my @CmdResult=`$Cmd`;
+    $rc=$?;
+    if ($rc eq 0){
+             my $cont=1;
+             my $directory="";
+             my $fichero="";
+             my $esdir=0;
+             my $fic="";
+             my $linea="";
+             foreach $_ (@CmdResult) {
+                             $linea=auxtrim($_);
+                             print "linea $linea \n";
+                             if ($linea ne '') {
+                                                 $esdir=index($linea,'./');
+                                                 if ($esdir > 0 ) {
+                                                                    $directory=$linea;
+                                                                    $fichero="";
+                                                                   }
+                                                     else {
+                                                                    $fichero=$linea;
+                                                           }
+                              }
+                           
+                             if (($directory ne '') and ($fichero ne '')) {
+                                                                          $fic=$directory.'/'.$fichero;
+                                                                           print FILERES "$cont <TAG>  CAT FILE  $fic   <TAG> PGM <TAG> cat.sh  $fic <TAG> \n ";
+                                                                           $cont++; 
+                                                                            }
+                        
+
+                            
+                                     } # END foreach
+                 }
+        else {
+               print " Command error $rc \n";
+               foreach $_ (@CmdResult) {
+                             print "$_ \n";
+                             print FILERES "\n";
+                             exit 0; 
+                                     }
+             }
+close FILERES;
+exit 0

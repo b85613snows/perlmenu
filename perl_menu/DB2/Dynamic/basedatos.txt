@@ -1,0 +1,6 @@
+ Database alias                       = MQINTD
+ Directory entry type                 = Indirect
+ Database alias                       = MQINTW
+ Directory entry type                 = Indirect
+ Database alias                       = MQSIBKDB
+ Directory entry type                 = Indirect

@@ -1,0 +1,2 @@
+ Database alias                       = CMOD
+ Directory entry type                 = Indirect

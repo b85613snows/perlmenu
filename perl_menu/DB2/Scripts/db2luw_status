@@ -1,0 +1,63 @@
+#!/bin/bash
+###########################################################################################
+#  Script: db2luw_status
+#  db2luw_status  This shell script takes care of display the status of db2 instances
+#  
+#  Return status instance to the calling program
+# Version 2.01 AUGUST 2019 
+# AUTHOR: Gustavo Mayordomo (83885613@es.ibm.com)
+# GROUP:  Grupo Bases de datos torre 1
+# ###############################################
+# =============================================================================
+# History of Changes
+# =============================================================================
+# Version   Person: /Comments
+# 20190724  Gustavo Mayordomo : Created from Spanish version 1.17
+# 20190814  Gustavo Mayordomo : Modify comments and code to English support
+# ============================================================================
+#set -x
+let lin=0
+
+   echo ">>>> Testing db2 instance status "
+   echo "  "
+ 
+
+   dbLS=/tmp/dbls.out
+   touch ${dbLS?}
+   chmod 777 ${dbLS?}
+   "/usr/local/bin/db2ls" > ${dbLS?}
+  
+   while  read -r -a myArray; do
+      :
+      let lin=$lin+1
+      if [[ $lin > 3 ]]; then
+         
+        dbinstall=${myArray[0]}
+        dbinstall="${dbinstall%"${dbinstall##*[![:space:]]}"}"
+#        echo $lin
+        echo "    ++++  Installation path found "
+        echo "    ++++  path   $dbinstall           "
+        echo "    "
+
+        dbFN=/tmp/dblist.out
+        touch ${dbFN?}
+        chmod 777 ${dbFN?}
+        $dbinstall"/instance/db2ilist" > ${dbFN?}
+        while read -r -a Arraydb; do
+        :
+        db=${Arraydb[0]}
+        db="${db%"${db##*[![:space:]]}"}"
+
+        echo "    ++++  DB2 instance found   "
+        echo "    ++++  Instance $db               "
+        echo "    "
+        echo  ">>>> Running db2luw display mode. Instance $db "
+       ./Scripts/db2luw status $db $dbinstall
+        done < ${dbFN?}
+        rm -f ${dbFN?}  
+
+      fi
+   done < ${dbLS?}
+   rm -f ${dbLS?}
+exit 0
+

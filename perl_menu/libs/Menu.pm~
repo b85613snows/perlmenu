@@ -1,0 +1,440 @@
+# Menu.pm
+package Menu;
+
+@ISA = qw(Exporter);
+@EXPORT = qw(existSubmenu existScript executeScript clear_screen clear_end gotoxy init finish hayDinamic resolDinamic sustDinamic $name copioMenu 
+              imprime_color cambio_color);
+
+use strict;
+use warnings;
+use Arquitectura;
+use POSIX;
+use Term::Cap;
+use Term::ANSIColor qw(:constants);
+
+my $tcap="";
+my $delay="";
+my $maxrow="";
+my $pdynam="";
+
+my ($result);
+
+
+###########################################################################################
+#  Rutina sustDinamic
+#  Entrada menu.ini, menu dinamico
+#  Elimina entrada dinamica. sustituye su valor por el contenido del fichero temporal.txt
+#  generado en Resoldinamic
+########################################################################################
+
+
+sub copioMenu {
+
+    my ($origMenu, $destMenu)  = @_;
+ 
+    open(FILEIN, "< $origMenu")
+    or die "Couldn't open File $origMenu   \n";
+
+    open(FILEOUT, "> $destMenu")
+    or die "Couldn't open File $destMenu   \n";
+
+    my $line ="";
+    my $result=1;
+ 
+    while (defined ($line = <FILEIN>)) {
+                          $line=trim($line);
+                          if ( $line ne '' ) {
+                                            print FILEOUT "$line \n";
+                                              }    
+                                       }
+
+    close (FILEIN);
+    close (FILEOUT);
+
+    return ($result);
+
+              }   
+
+###########################################################################################
+#  Rutina imprime_color
+#  Escribe un texto en el color indicado
+#
+########################################################################################
+
+sub imprime_color {
+  
+    my ($color, $texto)  = @_;
+
+    print $color, "$texto";  
+
+  }
+
+
+###########################################################################################
+#  Rutina cambio_color
+#  Cambia el color del texto o del background
+#
+########################################################################################
+
+sub cambio_color {
+  
+    my ($color)  = @_;
+
+    print $color;  
+
+  }
+
+sub sustDinamic
+
+ {
+
+    my ($nameMenu, $pdynam,$dir)  = @_; 
+
+    my $tmpfich=$dir."temporal.txt";
+    my $tmpMenu=$nameMenu.".aux";
+    my $line="";
+    my $lineaux="";
+    my @tags=();
+    my $name="";
+    my $desc="";
+    my $result=1;
+
+    
+    open(FILEIN, "< $nameMenu")
+    or die "Couldn't open File $nameMenu   \n";
+
+    open(AUXTMP, "< $tmpfich")
+    or die "Couldn't open File $tmpfich   \n";
+
+    open(OUTPUT, "> $tmpMenu")
+    or die "Couldn't open File $tmpMenu   \n";
+
+    while (defined ($line = <FILEIN>)) {
+
+           if (index($line,$pdynam) != -1)
+                 {
+                      while (defined ($lineaux = <AUXTMP>)) {
+                                  print OUTPUT "$lineaux";               
+                                                            } 
+                 } 
+                else  {
+                        print OUTPUT "$line";
+                      }
+                                        }
+    close (FILEIN);
+    close (AUXTMP);
+    close (OUTPUT);
+
+##  Copiamos tmp sobre txt
+
+    open(FILEIN, "< $tmpMenu")
+    or die "Couldn't open File $tmpMenu   \n";
+
+     open(OUTPUT, "> $nameMenu")
+    or die "Couldn't open File $nameMenu   \n";
+
+    while (defined ($line = <FILEIN>)) {
+                          print OUTPUT "$line";
+                                       }
+
+    close (FILEIN);
+    close (OUTPUT);
+
+
+
+   return ($result); 
+    
+ }
+
+###########################################################################################
+#  Rutina resolDinamic
+#  Entrada menu.ini
+#  Busca una entrada _DYNAMIC en el fichero .ini.Si la hay genera un fichero
+#  temporal.txt para resolverlo posterioremente
+########################################################################################
+
+sub resolDinamic
+
+  {
+
+     my ($nameMenu,$dir)  = @_;
+    
+    my $line="";
+    my @tags=();
+    my $name="";
+    my $desc="";
+    my $comando="";  
+    my $rc=0; 
+    my $tmpMenu=$dir."temporal.txt";
+ 
+    $result=1;
+
+    open(FILEIN, "< $nameMenu")
+    or die "Couldn't open File $nameMenu   \n";
+
+    open(OUTPUT, "> $tmpMenu")
+    or die "Couldn't open File $tmpMenu   \n";
+ 
+     while (defined ($line = <FILEIN>)) {
+  #  chomp $line;
+    @tags = split('<TAG>', $line);
+    $tags[0]=trim($tags[0]);  
+
+           if ($tags[0] =~ m/_DYNAMIC/)
+                                     {
+                                     ($name,$desc,$comando)=split('<TAG>', $line);
+                                     $comando=trim($comando);
+                                     my $Cmd=$dir."Dynamic/$comando";
+                                     my @CmdResult=`$Cmd`;  
+                                     $rc=$?;
+                                      if ($rc != 0){
+                                            foreach $_ (@CmdResult) {
+                                            print "$_ \n";
+                                                                     } # END foreach
+                                            close (FILEIN); 
+                                            close (OUTPUT);
+                                            $result=0;
+                                            return ($result,"NULL");          
+ 
+                                                    } # end comando erroneo
+                                         else {
+                                             #  el comando devuelve un fichero correcto
+                                             ($name,$desc,$comando)=split('<TAG>', $line);
+                                             $name=trim($name);
+                                             my $menuTemp=$dir."menuTemp.txt";
+                                             open(FILETMP, "< $menuTemp")
+                                             or die "Couldn't open File $menuTemp   \n";
+                                               my $lineaux="";
+                                               $name =~ s/_DYNAMIC//g;
+                                               $lineaux=$name."_START <TAG>".$desc."<TAG>\n";
+                                               print OUTPUT "$lineaux";
+                                               while (defined ($lineaux = <FILETMP>)) {
+                                                                                        print OUTPUT "$lineaux";
+                                                                                       }
+                                               $lineaux=$name."_END <TAG>\n";
+                                               print OUTPUT "$lineaux";
+                                               close (FILETMP);
+                                               $result=1;
+                                               close (FILEIN);
+                                               close (OUTPUT);
+                                               $name=$name."_DYNAMIC";
+                                               return ($result, $name);
+
+                                             }   # find de else con comando correcto
+                                     }  # end if dynamic  
+  
+                                      }  # while
+   close (FILEIN); 
+   close (OUTPUT);
+   $name=$name."_DYNAMIC";
+   return ($result, $name);
+
+
+  }
+
+sub hayDinamic
+  
+   {
+     my ($nameMenu)  = @_;
+    
+    my $line="";
+    my @tags=();
+ 
+    $result=0;
+
+    open(FILEDIN, "< $nameMenu")
+    or die "Couldn't open File $nameMenu   \n";
+
+
+
+    while (defined ($line = <FILEDIN>)) {
+   # chomp $line;
+
+    @tags = split('<TAG>', $line);
+         $tags[0]=trim($tags[0]);  
+       
+   #      if ( $tags[0] eq '') {
+   #                            $result = 20;
+   #                            return $result;
+   #                              } 
+           
+           if ($tags[0] =~ m/_DYNAMIC/)
+                                     {
+                                     $result=1;
+                                     close (FILEIN);
+                                     return $result;
+                                     }     
+  
+                                      }  # while
+   close (FILEDIN); 
+   return $result;
+      
+   
+   }
+
+
+sub existSubmenu
+
+{
+    my ($nameMenu, $nameSubmenu)  = @_;
+    
+    my $line="";
+    my @tags=();
+
+    $nameSubmenu=$nameSubmenu.'_START';
+
+    $result=0;
+    
+    open(FILEIN, "< $nameMenu")
+    or die "Couldn't open File $nameMenu   \n";
+
+    while (defined ($line = <FILEIN>)) {
+    chomp $line;
+    @tags = split('<TAG>', $line);
+         $tags[0]=trim($tags[0]);   
+         if ($tags[0] eq $nameSubmenu) {
+                                     $result=1;
+                                     close (FILEIN);
+                                     return $result;
+                                     }     
+  
+                                      }  # while
+   close (FILEIN); 
+   return $result;
+
+    
+}   
+
+sub existScript
+
+{
+    my ($script,$dir)  = @_;
+   
+    $script = 'NULL' unless defined $script;    # asigno null si no esta inicializada
+    $script=trim($script);
+    $result=0;
+    my $Cmd="ls $dir"."Scripts/";
+    my @CmdResult=`$Cmd`;    
+
+    foreach $_ (@CmdResult) {
+                                 $_=trim($_);
+                                  if ($script =~ m/$_/)
+                                                       {
+                                                        $result = 1;
+                                                        }                                              
+                              } # END foreach
+
+    
+   return $result;
+
+    
+}
+
+sub executeScript
+
+{
+    my ($script,$dir)  = @_;
+    $script=trim($script);
+    $result=1;
+  
+    clear_screen();   
+ 
+    print " \n";
+    print CYAN;
+    print " >>>>>>>> INICIO EJECUCION SCRIPT  $script   <<<<<<<<<<<<<<<<<<<<\n";
+    print " \n";
+    print WHITE;  
+
+    my $Cmd=$dir."Scripts/$script &";
+    my @CmdResult=`$Cmd`;
+
+    foreach $_ (@CmdResult) {
+                               print "$_ ";
+                             } # END foreach
+
+    print CYAN;   
+    print " \n";
+    print " >>>>>>>> FIN EJECUCION SCRIPT  $script   <<<<<<<<<<<<<<<<<<<<\n";     
+
+    
+    
+   return $result;
+
+    
+}
+
+
+sub insertSubmenu
+
+{
+    my ($nameMenu, $cabeza, $opciones)  = @_;
+
+     foreach (@$cabeza) {
+                print  " $_  \n";
+                
+                         }
+    
+     foreach (@$opciones) {
+                print  " $_  \n";
+                
+                         }
+
+
+    my $cont=1;
+    $result=0;
+    
+    open(OUTPUT, ">> $nameMenu")
+    or die "Couldn't open File $nameMenu   \n";
+
+    print OUTPUT "@$cabeza[0]_START  <TAG>  @$cabeza[1]  <TAG> \n  ";
+
+    foreach (@$opciones) {
+                print  OUTPUT "  $cont. <TAG>  $_  \n";
+                $cont++;
+                         }
+
+  
+    print OUTPUT "@$cabeza[0]_END  \n";
+ 
+    close (OUTPUT);
+  
+    $result=1;
+     
+    return $result;
+
+    
+}
+
+# Two convenience functions.  clear_screen is obvious, and
+# clear_end clears to the end of the screen.
+sub clear_screen { $tcap->Tputs('cl', 1, *STDOUT) } 
+sub clear_end    { $tcap->Tputs('cd', 1, *STDOUT) } 
+
+# Move the cursor to a particular location.
+sub gotoxy {
+    my($x, $y) = @_;
+    $tcap->Tgoto('cm', $x, $y, *STDOUT);
+} 
+
+# Get the terminal speed through the POSIX module and use that
+# to initialize Term::Cap.
+sub init { 
+    $| = 1;
+    $delay = (shift() || 0) * 0.005;
+    my $termios = POSIX::Termios->new();
+    $termios->getattr;
+    my $ospeed = $termios->getospeed;
+    $tcap = Term::Cap->Tgetent ({ TERM => undef, OSPEED => $ospeed });
+    $tcap->Trequire(qw(cl cm cd));
+}
+  
+# Clean up the screen.
+sub finish { 
+    gotoxy(1, 1);
+    clear_end();
+}
+
+
+END { }
+
+1;

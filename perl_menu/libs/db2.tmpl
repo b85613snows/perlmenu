@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Plantilladb2</title>
+
+</head>
+<body>
+<br>
+<br>
+<h1>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;<span style="background-color: white;"> </span><span style="font-style: italic; color: black; background-color: white;">DB2 LUW
+ INSTALLATION</span></h1>
+<br>
+<h2>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;CUSTOMER: &nbsp; &nbsp;
+&nbsp; &nbsp; &lt;<TMPL_VAR NAME="var_client">&gt;</h2>
+<h3>&nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;IBM
+DB2 GRUPO TORRE 1</h3>
+<h3>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;DATE  &nbsp; :
+&nbsp; &lt;<TMPL_VAR NAME ="var_fecha">&gt;
+</h3>
+<h3><font face="Arial, sans-serif"> <font size="5"><b>&nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp;Server and Instance&nbsp;</b>
+</font></font></h3>
+<p></p>
+<table style="min-width: 256px; max-width: 100%;" border="1" bordercolor="#000000" cellpadding="5" cellspacing="0">
+<tbody>
+<tr height="11" valign="top">
+<th bgcolor="#b3b3b3">
+<p class="western">Instance and server &nbsp;
+&nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</p>
+</th>
+</tr>
+<tr height="5" valign="top">
+<td>
+<p style="widows: 2; orphans: 2;" align="left"><tmpl_var name="var_servinstance"> </p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>&nbsp;&nbsp; &nbsp; &nbsp; &nbsp;</h3>
+<h3><br>
+</h3>
+<h3>&nbsp;&nbsp; &nbsp;<font face="Arial, sans-serif"> Version data <font size="5">
+</font></font></h3>
+<p></p>
+<table style="min-width: 256px; max-width: 100%; width: 500px; height: 300px;" border="1" bordercolor="#000000" cellpadding="5" cellspacing="0">
+<tbody>
+<tr height="11" valign="top">
+<th bgcolor="#b3b3b3">
+<p class="western">Tipo</p>
+</th>
+<th bgcolor="#b3b3b3">
+<p class="western">Valor</p>
+</th>
+</tr>
+<tr height="5" valign="top">
+<td>
+<p style="widows: 2; orphans: 2;" align="left">Product</p>
+</td>
+<td>
+<p style="widows: 2; orphans: 2;" align="left"><tmpl_var name="var_producto"> </p>
+</td>
+</tr>
+<tr height="5" valign="top">
+<td><br>
+Release <br>
+</td>
+<td><br>
+<tmpl_var name="var_licinstall"> </td>
+</tr>
+<tr height="5" valign="top">
+<td>
+<p style="widows: 2; orphans: 2;" align="left">PTF</p>
+</td>
+<td>
+<p style="widows: 2; orphans: 2;" align="left"><tmpl_var name="var_release"> </p>
+</td>
+</tr>
+<tr height="5" valign="top">
+<td>
+<p style="widows: 2; orphans: 2;" align="left">Fixpack</p>
+</td>
+<td>
+<p style="widows: 2; orphans: 2;" align="left"><tmpl_var name="var_tipolic"> </p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3><br>
+</h3>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;<br>
+<h3><font><font face="Arial, sans-serif">&nbsp;
+&nbsp;Installed products data</font></font></h3>
+<h3></h3>
+
+ <table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+<tbody>
+<tr>
+<td style="background-color: silver;">&nbsp;
+PRODUCT&nbsp;</td>
+<td style="background-color: silver;">NAME    </td>
+<td style="background-color: silver;">INSTALLED
+LICENSE</td>
+<td style="background-color: silver;">LICENSE 
+TYPE </td>
+</tr>
+<TMPL_LOOP NAME=producto_info>
+<tr>
+<td><tmpl_var name="var_prod"> </td>
+<td><tmpl_var name="var_nprod"> </td>
+<td><tmpl_var name="var_nlic"> </td>
+<td><tmpl_var name="var_tlic"> </td>
+</tr>
+</TMPL_LOOP>
+</tbody>
+</table>
+<h3><br>
+</h3>
+<h3><font><font><font><font face="Arial, sans-serif">&nbsp; Server data    </font></font></font></font></h3>
+<br>
+<table min-width="" max-width="" border="1" cellpadding="2" cellspacing="2">
+<tbody>
+<tr>
+<td style="width: 150px; background-color: silver;">FEATURE</td>
+<td style="background-color: silver; width: 250px;">VALUE&nbsp; &nbsp; &nbsp;</td>
+</tr>
+<TMPL_LOOP NAME=machine_info>
+<tr>
+<td><tmpl_var name="var_feature"> </td>
+<td><tmpl_var name="var_macvalor"> </td>
+</tr>
+</TMPL_LOOP>
+</tbody>
+</table>
+<h3><br>
+</h3>
+<h3><font><font><font><font><font><font><font><font face="Arial, sans-serif">&nbsp;Data  &nbsp;from  
+instance</font></font></font></font></font></font></font></font></h3>
+<br>
+<table min-width="" max-width="" border="1" cellpadding="2" cellspacing="2">
+<tbody>
+<tr>
+<td style="width: 150px; background-color: silver;">FEATURE</td>
+<td style="background-color: silver; width: 600px;">VALUE</td>
+</tr>
+<TMPL_LOOP NAME=instancia_info>
+<tr>
+<td align="undefined" valign="undefined"><tmpl_var name="var_instfeat"> </td>
+<td align="undefined" valign="undefined"><tmpl_var name="var_instvalor"> </td>
+</tr>
+</TMPL_LOOP>
+</tbody>
+</table>
+<br>
+<h3><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font face="Arial, sans-serif">Data &nbsp;from 
+&nbsp;database </font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></h3>
+<br>
+<table min-width="" max-width="" border="1" cellpadding="2" cellspacing="2">
+<tbody>
+<tr>
+<td style="background-color: silver;width: 150px;">FEATURE</td>
+<td style="background-color: silver;width: 600px;">VALUE</td>
+</tr>
+<TMPL_LOOP NAME=db_info>
+<tr>
+<td align="undefined" valign="undefined"><tmpl_var name="var_bdfeat"></td>
+<td align="undefined" valign="undefined"><tmpl_var name="var_bdvalor"></td>
+</tr>
+</TMPL_LOOP>
+</tbody>
+</table>
+<br>
+<h3><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font><font face="Arial, sans-serif">&nbsp; Paths de&nbsp; la
+&nbsp;base de datos</font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></font></h3>
+<br>
+<table min-width="" max-width="" border="1" cellpadding="2" cellspacing="2">
+<tbody>
+<tr>
+<td style="background-color: silver;width: 200px;">PATH TYPE FEATURE</td>
+<td style="background-color: silver;width: 600px;">LOCATION</td>
+<TMPL_LOOP NAME=db_path>
+<tr>
+<td align="undefined" valign="undefined"><tmpl_var name="var_tippath"></td>
+<td align="undefined" valign="undefined"><tmpl_var name="var_path"></td>
+</tr>
+</TMPL_LOOP>
+</tbody>
+</table>
+<br>
+<br>
+</body></html>
